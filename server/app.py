@@ -3,6 +3,7 @@
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from sqlalchemy import exc
 
 from models import db, Review, VideoGame
 
@@ -22,28 +23,30 @@ def index():
 # GAMES #
 
 @app.get('/videogames')
-def games():
-    games = [game.to_dict() for game in Game.query.all()]
-    return games, 201
+def all_games():
+    games = VideoGame.query.all()
+    games_to_dict = [game.to_dict() for game in games]
+    return games_to_dict, 200
 
 
 @app.post('/videogames')
 def create_game():
-    # try:
-    game = VideoGame(
-        title=request.json.get('title'),
-        genre=request.json.get('genre'),
-    )
-    db.session.add(game)
-    db.session.commit()
-    return game.to_dict(), 201
-    # except:
-    #     return { 'message': 'Failed to create game' }, 406
+    try:
+        data = request.json
+        new_vg = VideoGame(title=data['title'], genre=data['genre'])
+        db.session.add(new_vg)
+        db.session.commit()
+        return new_vg.to_dict(), 201
+    except KeyError as e:
+        return { 'error': str(e) }
+    except exc.IntegrityError as e:
+        return {'error': str(e)}
+
 
 @app.get('/videogames/<int:id>')
 def game_by_id(id):
-    game = VideoGame.query.filter(VideoGame.id == id).first()
     try:
+        game = VideoGame.query.where(VideoGame.id == id).first()
         return game.to_dict(), 200
     except AttributeError:
         return {'message': 'No game found'}, 404
@@ -51,26 +54,22 @@ def game_by_id(id):
 
 @app.patch('/videogames/<int:id>')
 def patch_game(id):
-    game = VideoGame.query.filter(VideoGame.id == id).first()
-    if game:
-        for attr in request.json:
-            setattr(game, attr, request.json.get(attr))
+    data = request.json
+    game = VideoGame.query.where(VideoGame.id == id).update(data)
+    db.session.commit()
 
-        db.session.add(game)
-        db.session.commit()
+    updated_game = VideoGame.query.where(VideoGame.id == id).first()
 
-        return game.to_dict(), 202
-    else:
-        return {'message': 'Game not found'}, 404
+    return updated_game.to_dict(), 202
 
 
 @app.delete('/videogames/<int:id>')
 def delete_game(id):
-    game = VideoGame.query.filter(VideoGame.id == id).first()
+    game = VideoGame.query.where(VideoGame.id == id).first()
     if game:
         db.session.delete(game)
         db.session.commit()
-        return {'message': 'Game deleted'}, 202
+        return {}, 204
     else:
         return {'message': 'No game found'}, 404
 

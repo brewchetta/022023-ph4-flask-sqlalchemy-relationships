@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from app import app
-from models import MODELS GO HERE
+from models import VideoGame, Review
 
 
 if __name__ == '__main__':

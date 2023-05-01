@@ -12,7 +12,7 @@ class VideoGame(db.Model):
     __tablename__ = 'video_games'
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String, unique=True, nullable=False)
+    title = db.Column(db.String(50), unique=True, nullable=False)
     genre = db.Column(db.String)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
@@ -24,8 +24,16 @@ class VideoGame(db.Model):
         return {
             'id': self.id,
             'title': self.title,
-            'genre': self.genre
+            'genre': self.genre,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
+
+    @validates('title', 'genre')
+    def validate_title(self, key, value):
+        if len(value) == 0:
+            raise KeyError(f'{key} cannot be empty')
+        return value
 
 
 class Review(db.Model):
