@@ -17,6 +17,10 @@ class VideoGame(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
+    # reviews = db.relationship('Review', backref='videogame')
+    reviews = db.relationship('Review', back_populates='videogame')
+
+
     def __repr__(self):
         return f'<VideoGame id={self.id} title={self.title} genre={self.genre}>'
 
@@ -26,7 +30,8 @@ class VideoGame(db.Model):
             'title': self.title,
             'genre': self.genre,
             'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'updated_at': self.updated_at,
+            'reviews': [review.to_dict() for review in self.reviews]
         }
 
     @validates('title', 'genre')
@@ -44,6 +49,10 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
+    game_id = db.Column(db.Integer, db.ForeignKey('video_games.id'), nullable=False)
+
+    videogame = db.relationship('VideoGame', back_populates='reviews')
+
     @validates('score')
     def validate_score(self, key, score):
         if score > 10 or score < 0:
@@ -56,5 +65,6 @@ class Review(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'score': self.score
+            'score': self.score,
+            'game_title': self.videogame.title
         }

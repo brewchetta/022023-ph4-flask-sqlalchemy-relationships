@@ -29,6 +29,12 @@ def all_games():
     return games_to_dict, 200
 
 
+@app.get('/reviews')
+def all_reviews():
+    revs = Review.query.all()
+    return [rev.to_dict() for rev in revs], 200
+
+
 @app.post('/videogames')
 def create_game():
     try:
@@ -41,6 +47,20 @@ def create_game():
         return { 'error': str(e) }
     except exc.IntegrityError as e:
         return {'error': str(e)}
+
+
+@app.post('/reviews')
+def create_review():
+    data = request.json
+    new_review = Review(
+        score=data["score"],
+        game_id=data["game_id"]
+    )
+
+    db.session.add(new_review)
+    db.session.commit()
+
+    return new_review.to_dict(), 201
 
 
 @app.get('/videogames/<int:id>')
